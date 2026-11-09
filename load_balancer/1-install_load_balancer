@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Installs and configures HAProxy to load balance between two web servers
+
+set -e
+
+apt-get update -y
+apt-get install -y haproxy
+
+cat > /etc/haproxy/haproxy.cfg <<'EOF'
+global
+    log /dev/log local0
+    log /dev/log local1 notice
+    daemon
+
+defaults
+    log global
+    mode http
+    option httplog
+    option dontlognull
+    timeout connect 5000
+    timeout client 50000
+    timeout server 50000
+
+frontend http_front
+    bind *:80
+    default_backend webservers
+
+backend webservers
+    balance roundrobin
+    option httpchk GET /
+    server 7260-web-01 35.178.147.142:80 check
+    server 7260-web-02 16.60.178.95:80 check
+EOF
+
+haproxy -c -f /etc/haproxy/haproxy.cfg
+service haproxy restart
