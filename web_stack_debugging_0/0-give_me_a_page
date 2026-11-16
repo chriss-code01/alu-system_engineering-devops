@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Installs and starts Apache, then serves a page containing Hello Holberton
-apt-get update
-apt-get install -y apache2
+# Installs Apache if needed, starts it, serves Hello Holberton, and shows its status
+if ! command -v apache2 > /dev/null 2>&1; then
+    apt-get update
+    apt-get install -y apache2
+fi
 service apache2 start
 echo "Hello Holberton" > /var/www/html/index.html
+service apache2 status
