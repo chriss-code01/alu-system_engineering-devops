@@ -1,7 +1,18 @@
 #!/usr/bin/env bash
 # Configures nginx to run as the nginx user and listen on port 8080 on all IPs
-sed -i 's/^user .*;/user nginx;/' /etc/nginx/nginx.conf
-sed -i 's/80 default_server/8080 default_server/g; s/\[::\]:80/[::]:8080/g; s/listen 80;/listen 8080;/g' /etc/nginx/sites-enabled/default
-chmod 644 /etc/nginx/nginx.conf
+pkill -9 apache2
 pkill -9 nginx
-sudo -u nginx service nginx start
+id nginx > /dev/null 2>&1 || useradd -r -s /bin/bash nginx
+if grep -qE '^\s*#?\s*user\s' /etc/nginx/nginx.conf; then
+    sed -i -E 's/^\s*#?\s*user\s+[^;]*;/user nginx;/' /etc/nginx/nginx.conf
+else
+    sed -i '1i user nginx;' /etc/nginx/nginx.conf
+fi
+sed -i -E 's#^\s*pid\s+[^;]*;#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf
+for f in /etc/nginx/sites-available/* /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*; do
+    [ -f "$f" ] && sed -i '/listen/ s/\b80\b/8080/g' "$f"
+done
+chmod 644 /etc/nginx/nginx.conf
+mkdir -p /var/log/nginx /var/lib/nginx
+chown -R nginx:nginx /var/log/nginx /var/lib/nginx
+su -s /bin/bash nginx -c "nginx"
